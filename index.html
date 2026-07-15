@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영주 게임 (Lord Game)</title>
+    <!-- Google Fonts for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header Section -->
+        <header class="game-header">
+            <div class="title-badge">STRATEGY SIMULATION</div>
+            <h1 id="game-title" class="main-title">영주 게임</h1>
+            <p class="subtitle">모든 영토를 점령하고 천하를 통일하십시오!</p>
+        </header>
+
+        <!-- Stats Board (HUD) -->
+        <section class="hud-container">
+            <div class="hud-card player-power">
+                <span class="hud-label">🛡️ 나의 군사력</span>
+                <span id="player-power-val" class="hud-value animate-value">50</span>
+            </div>
+            <div class="hud-card conquest-progress">
+                <span class="hud-label">🏰 영토 점령률</span>
+                <div class="progress-bar-wrapper">
+                    <div id="progress-bar" class="progress-bar" style="width: 10%;"></div>
+                </div>
+                <span id="progress-text" class="hud-value-sub">1 / 10 (10%)</span>
+            </div>
+            <div class="hud-card player-rank">
+                <span class="hud-label">👑 나의 작위</span>
+                <span id="player-rank-val" class="hud-value font-highlight">초보 영주</span>
+            </div>
+        </section>
+
+        <!-- Main Game Area -->
+        <main class="game-main">
+            <!-- Game Map (Node Graph with SVG Connections) -->
+            <div class="map-wrapper">
+                <div class="map-header">
+                    <h3>🗺️ 제국 연합 지도</h3>
+                </div>
+                
+                <div class="map-container" id="map-container">
+                    <!-- SVG for connection lines -->
+                    <svg class="map-connections" id="connections-svg"></svg>
+                    <!-- Node items will be generated dynamically by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Panel (Instructions & Battle Logs) -->
+            <aside class="panel-container">
+                <!-- Instructions -->
+                <div class="instruction-card">
+                    <h4>⚔️ 침공 규칙</h4>
+                    <ul>
+                        <li>파란색 <strong>나의 영토</strong>에서 선으로 연결된 영토를 침공할 수 있습니다.</li>
+                        <li><strong>색상 구분 없음:</strong> 침공 가능이나 전투력 부족 여부가 표시되지 않으니, 직접 나의 군사력과 적의 군사력을 비교하여 신중히 진격하십시오!</li>
+                        <li><strong>침공 조건:</strong> 나의 군사력이 적의 군사력과 <strong>같거나 크면</strong> 승리합니다.</li>
+                        <li><strong>실패 시:</strong> 나보다 강한 영토를 공격하면 <strong>정벌 실패(게임 오버)</strong>가 됩니다.</li>
+                        <li>적들은 30부터 30씩 증가하는 등차수열(30, 60, ... 270) 군사력을 가집니다.</li>
+                    </ul>
+                </div>
+
+                <!-- Battle Logs -->
+                <div class="log-card">
+                    <div class="log-header">
+                        <h4>📜 전황 보고서</h4>
+                        <button id="clear-log-btn" class="btn-text">기록 지우기</button>
+                    </div>
+                    <div class="log-content" id="log-content">
+                        <div class="log-item system">영주님, 천하 통일을 위한 정벌을 시작할 준비가 되었습니다.</div>
+                    </div>
+                </div>
+
+                <!-- Sound Control & Reset -->
+                <div class="system-controls">
+                    <button id="sound-toggle-btn" class="control-btn sound-on">🔊 효과음 켜짐</button>
+                    <button id="reset-btn" class="control-btn reset">🔄 영지 초기화</button>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Victory Overlay (Modal) -->
+    <div id="victory-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="crown-icon">👑</div>
+            <h2 class="victory-title">영주 승리</h2>
+            <p class="victory-subtitle">모든 반란군을 무찌르고 마침내 천하를 통일하여 대제국의 유일한 황제가 되셨습니다!</p>
+            
+            <div class="victory-stats">
+                <div class="stat-box">
+                    <span class="box-label">최종 군사력</span>
+                    <span id="final-power" class="box-value">1400</span>
+                </div>
+                <div class="stat-box">
+                    <span class="box-label">정벌한 영토</span>
+                    <span class="box-value">10 / 10</span>
+                </div>
+            </div>
+
+            <button id="restart-game-btn" class="restart-btn animate-pulse">새로운 정벌 시작하기</button>
+        </div>
+    </div>
+
+    <!-- Defeat Overlay (Modal) -->
+    <div id="defeat-modal" class="modal-overlay hidden">
+        <div class="modal-content defeat">
+            <div class="skull-icon">💀</div>
+            <h2 class="defeat-title">정벌 실패</h2>
+            <p class="defeat-subtitle">자신보다 강력한 군사력을 가진 나라를 무리하게 침공하여 군대가 전멸했습니다...</p>
+            
+            <div class="victory-stats">
+                <div class="stat-box">
+                    <span class="box-label">패배 시 군사력</span>
+                    <span id="defeat-power" class="box-value">80</span>
+                </div>
+                <div class="stat-box">
+                    <span class="box-label">정벌한 영토</span>
+                    <span id="defeat-territories" class="box-value">2 / 10</span>
+                </div>
+            </div>
+
+            <button id="restart-defeat-btn" class="restart-btn defeat-restart animate-pulse-red">다시 정벌 도전하기</button>
+        </div>
+    </div>
+
+    <!-- Background Canvas for Confetti/Celebration -->
+    <canvas id="celebration-canvas" class="celebration-canvas hidden"></canvas>
+
+    <script src="game.js"></script>
+</body>
+</html>
